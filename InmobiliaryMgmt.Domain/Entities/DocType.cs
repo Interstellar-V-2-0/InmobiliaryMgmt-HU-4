@@ -1,0 +1,7 @@
+namespace InmobiliaryMgmt.Domain.Entities;
+
+public class DocType
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+}
