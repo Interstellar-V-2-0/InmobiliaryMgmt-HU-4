@@ -17,4 +17,5 @@ public class AppDbContext : DbContext
     public DbSet<ContactRequest> ContactRequests { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder){}
+    
 }

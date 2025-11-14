@@ -22,4 +22,5 @@ public class ContactRequestRepository : IContactRequestRepository
     {
         await _context.SaveChangesAsync();
     }
+    
 }

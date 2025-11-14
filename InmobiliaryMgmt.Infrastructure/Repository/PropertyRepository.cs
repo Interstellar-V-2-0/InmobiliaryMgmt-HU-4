@@ -18,4 +18,5 @@ public class PropertyRepository : IPropertyRepository
             .Include(P =>P.User)
             .FirstOrDefaultAsync(p => p.Id == id);
     }
+    
 }

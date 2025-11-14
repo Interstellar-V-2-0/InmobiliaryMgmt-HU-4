@@ -27,5 +27,6 @@ public class EmailService : IEmailService
 
         await smtp.SendAsync(email);
         await smtp.DisconnectAsync(true);
+        
     }
 }

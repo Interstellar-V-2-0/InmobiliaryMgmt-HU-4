@@ -1,13 +1,23 @@
+using InmobiliaryMgmt.Infrastructure;
+using InmobiliaryMgmt.Application.Interfaces;
+using InmobiliaryMgmt.Application.Services;
+using InmobiliaryMgmt.Domain.Interfaces;
+using InmobiliaryMgmt.Infrastructure.Email;
+using InmobiliaryMgmt.Infrastructure.Repository;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IContactRequestService, ContactRequestService>();
+builder.Services.AddScoped<IContactRequestRepository, ContactRequestRepository>();
+builder.Services.AddScoped<IPropertyRepository, PropertyRepository>();
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -23,7 +33,7 @@ var summaries = new[]
 
 app.MapGet("/weatherforecast", () =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
+    var forecast = Enumerable.Range(1, 5).Select(index =>
         new WeatherForecast
         (
             DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
