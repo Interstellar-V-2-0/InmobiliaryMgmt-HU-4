@@ -1,4 +1,4 @@
-namespace Application.Interfaces
+namespace InmobiliaryMgmt.Application.Interfaces
 {
     public interface IUserService
     {

@@ -23,7 +23,9 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IPropertyImageRepository, PropertyImageRepository>();
 
 // Services
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPropertyImageService, PropertyImageService>();
+builder.Services.AddScoped<CloudinaryService>();
 
 builder.Services.AddControllers();
 

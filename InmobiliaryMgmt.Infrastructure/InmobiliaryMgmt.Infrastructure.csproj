@@ -24,4 +24,10 @@
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="BCrypt.Net-Next">
+      <HintPath>..\..\..\..\.nuget\packages\bcrypt.net-next\4.0.2\lib\net5.0\BCrypt.Net-Next.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

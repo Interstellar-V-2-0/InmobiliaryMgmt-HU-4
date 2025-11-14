@@ -45,21 +45,12 @@ namespace InmobiliaryMgmt.Application.Controllers
             if (file == null || file.Length == 0)
                 return BadRequest("No se proporcionó ningún archivo.");
 
-            // Subir la imagen a Cloudinary
-            var uploadResult = await _cloudinaryService.UploadImageAsync(file);
-
-            // Crear el registro en la DB
-            var propertyImage = new PropertyImage
-            {
-                PropertyId = propertyId,
-                Url = uploadResult.SecureUrl.ToString(),
-                PublicId = uploadResult.PublicId
-            };
-           
+            // Solo llamamos al servicio, que ya hace todo
             var createdImage = await _propertyImageService.CreateAsync(propertyId, file);
-            
+    
             return Ok(createdImage);
         }
+
 
         // Eliminar imagen
         [HttpDelete("{id}")]
