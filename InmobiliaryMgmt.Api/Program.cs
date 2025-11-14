@@ -1,16 +1,28 @@
 using InmobiliaryMgmt.Application.Interfaces;
 using InmobiliaryMgmt.Application.Services;
-using InmobiliaryMgmt.Domain.Entities;
 using InmobiliaryMgmt.Domain.Interfaces;
+using InmobiliaryMgmt.Infrastructure.Data;
 using InmobiliaryMgmt.Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using InmobiliaryMgmt.Api.Swagger;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configuración de Cloudinary
 builder.Services.AddSingleton<CloudinaryService>();
 
-builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+// Registro de DbContext con MySQL
+builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
+            new MySqlServerVersion(new Version(8, 0, 33))) // Ajusta versión según tu MySQL
+);
 
+// Repositorios
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+builder.Services.AddScoped<IPropertyImageRepository, PropertyImageRepository>();
+
+// Services
 builder.Services.AddScoped<IPropertyImageService, PropertyImageService>();
 
 builder.Services.AddControllers();
@@ -19,6 +31,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "InmobiliaryMgmt API", Version = "v1" });
+    
+    c.OperationFilter<SwaggerFileOperationFilter>();
 });
 
 var app = builder.Build();
