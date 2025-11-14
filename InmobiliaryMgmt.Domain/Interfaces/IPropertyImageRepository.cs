@@ -1,6 +1,9 @@
-namespace InmobiliaryMgmt.Domain.Interfaces;
+using InmobiliaryMgmt.Domain.Entities;
 
-public class IPropertyImageRepository
+namespace InmobiliaryMgmt.Domain.Interfaces
 {
-    
+    public interface IPropertyImageRepository : IRepository<PropertyImage>
+    {
+        Task<IEnumerable<PropertyImage>> GetByPropertyIdAsync(int propertyId);
+    }
 }

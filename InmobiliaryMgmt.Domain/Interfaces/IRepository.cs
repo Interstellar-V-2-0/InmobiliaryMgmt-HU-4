@@ -1,10 +1,11 @@
-namespace InmobiliaryMgmt.Domain.Interfaces;
-
-public interface IRepostory<T> where T : class
+namespace InmobiliaryMgmt.Domain.Interfaces
 {
-    Task<IEnumerable<T>> GetAllAsync();
-    Task<T?> GetByIdAsync(int id);
-    Task<T> CreateAsync(T entity);
-    Task<T>  UpdateAsync(T entity);
-    Task<T>  DeleteAsync(T entity);
+    public interface IRepository<T> where T : class
+    {
+        Task<IEnumerable<T>> GetAllAsync();
+        Task<T?> GetByIdAsync(int id);
+        Task<T> CreateAsync(T entity);
+        Task<T> UpdateAsync(T entity);
+        Task<T> DeleteAsync(T entity);
+    }
 }
