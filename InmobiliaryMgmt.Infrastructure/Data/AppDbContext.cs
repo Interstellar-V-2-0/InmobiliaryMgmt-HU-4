@@ -5,34 +5,107 @@ namespace InmobiliaryMgmt.Infrastructure.Data
 {
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) 
-            : base(options) { }
+        public AppDbContext(DbContextOptions<AppDbContext> options)
+            : base(options)
+        {
+        }
 
-        // Tablas existentes
-        // public DbSet<Property> Properties { get; set; }
+        // ENTIDADES / TABLAS
+        public DbSet<User> Users { get; set; }
+        public DbSet<Role> Roles { get; set; }
+        public DbSet<Property> Properties { get; set; }
+        public DbSet<DocType> DocTypes { get; set; }
+        public DbSet<ContactRequest> ContactRequests { get; set; }
 
-        // NUESTRA NUEVA TABLA
+        // NUEVA TABLA
         public DbSet<PropertyImage> PropertyImages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Configuración de PropertyImage
+            // User
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.HasKey(u => u.Id);
+
+                entity.Property(u => u.Name).IsRequired().HasMaxLength(50);
+                entity.Property(u => u.LastName).IsRequired().HasMaxLength(50);
+                entity.Property(u => u.Email).IsRequired().HasMaxLength(120);
+
+                entity.HasIndex(u => u.Email).IsUnique();
+
+                entity.HasOne(u => u.Role)
+                    .WithMany(r => r.Users)
+                    .HasForeignKey(u => u.RoleId);
+
+                entity.HasOne(u => u.DocType)
+                    .WithMany(dt => dt.Users)
+                    .HasForeignKey(u => u.DocTypeId);
+            });
+
+            // Role
+            modelBuilder.Entity<Role>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.Name).IsRequired().HasMaxLength(50);
+            });
+
+            // DocType
+            modelBuilder.Entity<DocType>(entity =>
+            {
+                entity.HasKey(dt => dt.Id);
+                entity.Property(dt => dt.Name).IsRequired().HasMaxLength(50);
+            });
+
+            // Property
+            modelBuilder.Entity<Property>(entity =>
+            {
+                entity.HasKey(p => p.Id);
+                entity.Property(p => p.Title)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                // Relación con PropertyImages
+                entity.HasMany(p => p.PropertyImages)
+                      .WithOne(pi => pi.Property)
+                      .HasForeignKey(pi => pi.PropertyId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // ContactRequest
+            modelBuilder.Entity<ContactRequest>(entity =>
+            {
+                entity.HasKey(c => c.Id);
+
+                entity.Property(c => c.Message)
+                    .IsRequired()
+                    .HasMaxLength(500);
+
+                entity.HasOne(c => c.User)
+                    .WithMany(u => u.ContactRequests)
+                    .HasForeignKey(c => c.UserId);
+
+                entity.HasOne(c => c.Property)
+                    .WithMany()
+                    .HasForeignKey(c => c.PropertyId);
+            });
+
+            // PropertyImage
             modelBuilder.Entity<PropertyImage>(entity =>
             {
-                entity.HasKey(e => e.Id);
+                entity.HasKey(pi => pi.Id);
 
-                entity.Property(e => e.Url)
+                entity.Property(pi => pi.Url)
                     .IsRequired()
-                    .HasMaxLength(500); // opcional, limita la longitud de la URL
-
-                // Relación con Property
-                entity.HasOne(e => e.Property)
-                    .WithMany(p => p.PropertyImages) // Asegúrate que Property tenga ICollection<PropertyImage> Images
-                    .HasForeignKey(e => e.PropertyId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .HasMaxLength(500);
             });
+
+            // Seed roles
+            modelBuilder.Entity<Role>().HasData(
+                new Role { Id = 1, Name = "Administrador" },
+                new Role { Id = 2, Name = "Cliente" }
+            );
         }
     }
 }
