@@ -24,7 +24,7 @@ public class ContactRequestService : IContactRequestService
 
     public async Task<ContactRequestResponseDto> CreateAsync(int userId, ContactRequestCreateDto dto)
     {
-        var property = await _propertyRepository.GetByIdAsync(dto.PropertyId);
+        var property = await _propertyRepository.GetByIdAsync(dto.PropertyId); 
 
         if (property == null)
             throw new Exception("La propiedad no existe.");
@@ -39,25 +39,22 @@ public class ContactRequestService : IContactRequestService
             Message = dto.Message,
             SentDate = DateTime.UtcNow,
         };
-
-        await _contactRequestRepository.AddAsync(request);
-        await _contactRequestRepository.SaveChangesAsync();
-
-        // Enviar correo al propietario
+        
+        var createdRequest = await _contactRequestRepository.CreateAsync(request); 
+        
         await _emailService.SendEmailAsync(
             property.User.Email,
             "Nueva solicitud de contacto",
             $"Mensaje del usuario:\n\n{dto.Message}"
         );
-
-        // Respuesta de éxito
+        
         return new ContactRequestResponseDto
         {
-            Id = request.Id,
-            PropertyId = request.PropertyId,
-            UserId = request.UserId,
-            Message = request.Message,
-            SentDate = request.SentDate
+            Id = createdRequest.Id,
+            PropertyId = createdRequest.PropertyId,
+            UserId = createdRequest.UserId,
+            Message = createdRequest.Message,
+            SentDate = createdRequest.SentDate
         };
     }
 }

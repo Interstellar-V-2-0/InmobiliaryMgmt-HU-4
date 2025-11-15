@@ -3,7 +3,6 @@ using System.Security.Claims;
 using System.Text;
 using Infrastructure.Repositories;
 using InmobiliaryMgmt.Application.Interfaces;
-using InmobiliaryMgmt.Application.DTOs.User; // Importado para los DTOs de perfil
 using InmobiliaryMgmt.Domain.Entities;
 using InmobiliaryMgmt.Domain.Interfaces;
 using Microsoft.Extensions.Configuration;
@@ -11,22 +10,19 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace InmobiliaryMgmt.Application.Services;
 
-public class UserService : IUserService
+public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IConfiguration _configuration;
 
-    public UserService(IUserRepository userRepository, IRefreshTokenRepository refreshTokenRepository, IConfiguration configuration)
+    public AuthService(IUserRepository userRepository, IRefreshTokenRepository refreshTokenRepository, IConfiguration configuration)
     {
         _userRepository = userRepository;
         _refreshTokenRepository = refreshTokenRepository;
         _configuration = configuration;
     }
     
-    // --- MÉTODOS DE AUTENTICACIÓN ---
-
-    // Registro
     public async Task<string> Register(string name, string lastName, string email, string password, int roleId, int docTypeId)
     {
         var exists = await _userRepository.EmailExistsAsync(email);
@@ -49,8 +45,7 @@ public class UserService : IUserService
 
         return "Usuario registrado correctamente";
     }
-
-    // Login: retorna JWT + Refresh Token
+    
     public async Task<(string? AccessToken, string? RefreshToken)> Login(string email, string password)
     {
         var user = await _userRepository.GetByEmailAsync(email);
@@ -64,10 +59,10 @@ public class UserService : IUserService
         return (accessToken, refreshToken);
     }
     
-    // Refresh Token
+
     public async Task<(string? AccessToken, string? RefreshToken)> RefreshToken(string token)
     {
-        // Se asume que GetByTokenWithUserAsync carga la entidad User relacionada
+
         var refreshTokenEntity = await _refreshTokenRepository.GetByTokenWithUserAsync(token);
 
         if (refreshTokenEntity == null || refreshTokenEntity.ExpiryDate < DateTime.UtcNow)
@@ -82,7 +77,6 @@ public class UserService : IUserService
         return (accessToken, newRefreshToken);
     }
     
-    // Generación de JWT
     private string GenerateJwtToken(User user)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
@@ -106,8 +100,7 @@ public class UserService : IUserService
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
-
-    // Generación y almacenamiento de Refresh Token
+    
     private async Task<string> GenerateRefreshToken(User user)
     {
         var refreshToken = new RefreshToken
@@ -120,54 +113,5 @@ public class UserService : IUserService
         await _refreshTokenRepository.CreateAsync(refreshToken);
 
         return refreshToken.Token;
-    }
-
-
-    // --- MÉTODOS DE GESTIÓN DE PERFIL (NUEVOS) ---
-    
-    public async Task<UserResponseDto?> GetProfileByIdAsync(int userId)
-    {
-        // Se asume que GetByIdAsync carga automáticamente (o se ajusta el repo para cargar) 
-        // las entidades Role y DocType para el DTO.
-        var user = await _userRepository.GetByIdAsync(userId); 
-        
-        if (user == null)
-            return null;
-
-        // Mapeo manual a UserResponseDto
-        return new UserResponseDto
-        {
-            Id = user.Id,
-            Name = user.Name,
-            LastName = user.LastName,
-            Email = user.Email,
-            DocumentNumber = user.DocumentNumber,
-            RoleName = user.Role?.Name ?? "N/A", // Acceso seguro a la propiedad de navegación
-            DocTypeName = user.DocType?.Name ?? "N/A" // Acceso seguro a la propiedad de navegación
-        };
-    }
-
-    public async Task<UserResponseDto> UpdateProfileAsync(int userId, UserUpdate dto)
-    {
-        // Se asume que GetByIdAsync solo carga el usuario base
-        var user = await _userRepository.GetByIdAsync(userId);
-
-        if (user == null)
-        {
-            throw new KeyNotFoundException($"Usuario con ID {userId} no encontrado."); 
-        }
-
-        // Aplicar actualizaciones
-        user.Name = dto.Name ?? user.Name;
-        user.LastName = dto.LastName ?? user.LastName;
-        user.DocumentNumber = dto.DocumentNumber ?? user.DocumentNumber;
-
-        await _userRepository.UpdateAsync(user);
-
-        // Devolver el perfil actualizado llamando al método de lectura
-        var updatedProfile = await GetProfileByIdAsync(user.Id);
-        
-        return updatedProfile ?? 
-               throw new InvalidOperationException("Error al recuperar el perfil actualizado después de la actualización.");
     }
 }

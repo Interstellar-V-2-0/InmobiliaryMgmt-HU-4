@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace InmobiliaryMgmt.Api.Controllers;
 
 [ApiController]
-[Route("api/ContactRequest")]
+[Route("api/[controller]")]
 public class ContactRequestController : ControllerBase
 {
     private readonly IContactRequestService _contactRequestService;
@@ -21,10 +21,20 @@ public class ContactRequestController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Create(ContactRequestCreateDto dto)
     {
-        var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var claimValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        
+        if (string.IsNullOrEmpty(claimValue) || !int.TryParse(claimValue, out var userId))
+            return Unauthorized("Invalid token or missing user id.");
 
-        var result = await _contactRequestService.CreateAsync(userId, dto);
-
-        return Ok(result);
+        try
+        {
+            var result = await _contactRequestService.CreateAsync(userId, dto);
+            return Ok(result); 
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { Message = ex.Message });
+        }
     }
+    
 }

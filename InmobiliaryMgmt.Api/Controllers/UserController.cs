@@ -1,42 +1,65 @@
-
-using InmobiliaryMgmt.Application.DTOs.User;
 using InmobiliaryMgmt.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using InmobiliaryMgmt.Application.DTOs.User;
 
-namespace Api.Controllers
+namespace InmobiliaryMgmt.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+[Authorize] 
+public class UserController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class UserController : ControllerBase
+    private readonly IUserService _userService;
+
+    public UserController(IUserService userService)
     {
-        private readonly IUserService _service;
+        _userService = userService;
+    }
 
-        public UserController(IUserService service)
+    private int? GetUserIdFromClaims()
+    {
+        var claimValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(claimValue) || !int.TryParse(claimValue, out var userId))
+            return null;
+        return userId;
+    }
+    
+    [HttpGet("me")]
+    public async Task<IActionResult> GetCurrentUserProfile()
+    {
+        var userId = GetUserIdFromClaims();
+        if (userId == null) 
+            return Unauthorized("Token inválido o ID de usuario faltante.");
+        
+        var userProfile = await _userService.GetProfileByIdAsync(userId.Value); 
+        
+        if (userProfile == null)
+            return NotFound("Perfil de usuario no encontrado.");
+
+        return Ok(userProfile);
+    }
+    
+    [HttpPut("me")]
+    public async Task<IActionResult> UpdateCurrentUserProfile([FromBody] UserUpdate dto)
+    {
+        var userId = GetUserIdFromClaims();
+        if (userId == null) 
+            return Unauthorized("Token inválido o ID de usuario faltante.");
+        
+        try
         {
-            _service = service;
+            var updatedUser = await _userService.UpdateProfileAsync(userId.Value, dto);
+            return Ok(updatedUser);
         }
-
-        [HttpPost("Register")]
-        public async Task<IActionResult> Register(RegisterUserDto dto)
+        catch (KeyNotFoundException)
         {
-            var result = await _service.Register(
-                dto.Name, 
-                dto.LastName, 
-                dto.Email, 
-                dto.Password,
-                dto.RoleId,
-                dto.DocTypeId
-            );
-
-            return Ok(result);
+            return NotFound("Usuario no encontrado.");
         }
-
-        [HttpPost("Login")]
-        public async Task<IActionResult> Login(LoginDto dto)
+        catch (Exception ex)
         {
-            var token = await _service.Login(dto.Email, dto.Password);
-            if (token == null) return Unauthorized("Credenciales incorrectas.");
-            return Ok(new { token });
+            return BadRequest(new { Message = ex.Message });
         }
     }
 }

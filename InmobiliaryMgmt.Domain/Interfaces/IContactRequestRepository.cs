@@ -2,8 +2,6 @@
 
 namespace InmobiliaryMgmt.Domain.Interfaces;
 
-public interface IContactRequestRepository
+public interface IContactRequestRepository : IRepository<ContactRequest>
 {
-    Task AddAsync(ContactRequest request);
-    Task SaveChangesAsync();
 }

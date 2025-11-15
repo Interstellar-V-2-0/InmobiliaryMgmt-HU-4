@@ -1,4 +1,4 @@
-﻿namespace InmobiliaryMgmt.Application.Interfaces;
+﻿namespace InmobiliaryMgmt.Domain.Interfaces;
 
 public interface IEmailService
 {

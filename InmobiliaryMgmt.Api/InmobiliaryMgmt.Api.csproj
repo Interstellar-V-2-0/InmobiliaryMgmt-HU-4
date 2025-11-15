@@ -6,28 +6,19 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
-  <!-- PACKAGES NECESARIOS PARA LA API -->
   <ItemGroup>
-
-    <!-- Cloudinary -->
     <PackageReference Include="CloudinaryDotNet" Version="1.27.8" />
-
-    <!-- JWT -->
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
-
-    <!-- OpenAPI -->
+    <PackageReference Include="DotNetEnv" Version="3.1.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.22" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.21" />
-
-    <!-- Swagger -->
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
-
-    <!-- EF Core (solo runtime, NO SQL Server) -->
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.11" />
-
-    <!-- EF Tools NO SE USAN AQUÍ, ESTÁN EN INFRASTRUCTURE -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
-  <!-- REFERENCIAS A OTRAS CAPAS -->
   <ItemGroup>
     <ProjectReference Include="..\InmobiliaryMgmt.Application\InmobiliaryMgmt.Application.csproj" />
     <ProjectReference Include="..\InmobiliaryMgmt.Infrastructure\InmobiliaryMgmt.Infrastructure.csproj" />

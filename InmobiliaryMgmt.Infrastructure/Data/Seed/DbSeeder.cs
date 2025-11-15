@@ -44,8 +44,8 @@ public class DbSeeder
                 DocumentNumber = "1234567890",
                 RoleId = adminRole.Id,
                 Email = "SpAdmin@gmail.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("SpAdmin123!"),
-                RegisterDate = DateTime.UtcNow,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("SpAdmin123!"), 
+                RegisterDate = DateTime.UtcNow, 
             });
             await context.SaveChangesAsync();
         }
