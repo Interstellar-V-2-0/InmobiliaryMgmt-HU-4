@@ -6,28 +6,27 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <!-- REFERENCIAS A OTRAS CAPAS -->
   <ItemGroup>
+    <ProjectReference Include="..\InmobiliaryMgmt.Application\InmobiliaryMgmt.Application.csproj" />
     <ProjectReference Include="..\InmobiliaryMgmt.Domain\InmobiliaryMgmt.Domain.csproj" />
   </ItemGroup>
 
+  <!-- PAQUETES NECESARIOS -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.0">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    <!-- EF CORE MySQL -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.11">
       <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
-  </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="BCrypt.Net-Next">
-      <HintPath>..\..\..\..\.nuget\packages\bcrypt.net-next\4.0.2\lib\net5.0\BCrypt.Net-Next.dll</HintPath>
-    </Reference>
+    <!-- EMAIL -->
+    <PackageReference Include="MailKit" Version="4.14.1" />
+    <PackageReference Include="MimeKit" Version="4.14.0" />
+
+    <!-- BCrypt desde NuGet (Ésta es la correcta) -->
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.2" />
   </ItemGroup>
 
 </Project>
