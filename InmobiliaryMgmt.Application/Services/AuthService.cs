@@ -1,7 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Infrastructure.Repositories;
 using InmobiliaryMgmt.Application.Interfaces;
 using InmobiliaryMgmt.Domain.Entities;
 using InmobiliaryMgmt.Domain.Interfaces;
@@ -65,7 +64,7 @@ public class AuthService : IAuthService
 
         var refreshTokenEntity = await _refreshTokenRepository.GetByTokenWithUserAsync(token);
 
-        if (refreshTokenEntity == null || refreshTokenEntity.ExpiryDate < DateTime.UtcNow)
+        if (refreshTokenEntity == null || refreshTokenEntity.ExpiryDate < DateTime.UtcNow || refreshTokenEntity.IsRevoked)
             return (null, null);
 
         refreshTokenEntity.IsRevoked = true;
@@ -85,7 +84,7 @@ public class AuthService : IAuthService
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Role, user.Role?.Name ?? string.Empty),
+            new Claim(ClaimTypes.Role, user.Role?.Name),
             new Claim(ClaimTypes.Email, user.Email),
             new Claim("Name", user.Name)
         };

@@ -1,3 +1,4 @@
+using InmobiliaryMgmt.Api.Extensions; // Importamos la extensión
 using InmobiliaryMgmt.Application.DTOs.Property;
 using InmobiliaryMgmt.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -17,13 +18,7 @@ public class PropertyController : ControllerBase
         _propertyService = propertyService;
     }
 
-    private int? GetUserIdFromClaims()
-    {
-        var claimValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(claimValue) || !int.TryParse(claimValue, out var userId))
-            return null;
-        return userId;
-    }
+
     
     [HttpGet]
     [AllowAnonymous] 
@@ -46,12 +41,13 @@ public class PropertyController : ControllerBase
     [Authorize(Roles = "Agent,Admin")] 
     public async Task<IActionResult> Create([FromBody] PropertyUpsertDto dto)
     {
-        var userId = GetUserIdFromClaims();
-        if (userId == null) return Unauthorized("Token inválido o ID de usuario faltante.");
+        int userId;
+        try { userId = this.GetUserId(); }
+        catch (UnauthorizedAccessException ex) { return Unauthorized(ex.Message); }
 
         try
         {
-            var createdProperty = await _propertyService.CreateAsync(userId.Value, dto);
+            var createdProperty = await _propertyService.CreateAsync(userId, dto);
             return CreatedAtAction(nameof(GetById), new { id = createdProperty.Id }, createdProperty);
         }
         catch (Exception ex)
@@ -64,12 +60,13 @@ public class PropertyController : ControllerBase
     [Authorize(Roles = "Agent,Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] PropertyUpsertDto dto)
     {
-        var userId = GetUserIdFromClaims();
-        if (userId == null) return Unauthorized("Token inválido o ID de usuario faltante.");
+        int userId;
+        try { userId = this.GetUserId(); } 
+        catch (UnauthorizedAccessException ex) { return Unauthorized(ex.Message); }
         
         try
         {
-            var updatedProperty = await _propertyService.UpdateAsync(id, userId.Value, dto);
+            var updatedProperty = await _propertyService.UpdateAsync(id, userId, dto);
             return Ok(updatedProperty);
         }
         catch (KeyNotFoundException)
@@ -78,7 +75,8 @@ public class PropertyController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message); // HTTP 403 Forbidden
+            return StatusCode(StatusCodes.Status403Forbidden, new { Message = ex.Message });
+
         }
         catch (Exception ex)
         {
@@ -90,18 +88,19 @@ public class PropertyController : ControllerBase
     [Authorize(Roles = "Agent,Admin")]
     public async Task<IActionResult> Delete(int id)
     {
-        var userId = GetUserIdFromClaims();
-        if (userId == null) return Unauthorized("Token inválido o ID de usuario faltante.");
+        int userId;
+        try { userId = this.GetUserId(); } 
+        catch (UnauthorizedAccessException ex) { return Unauthorized(ex.Message); }
 
         try
         {
-            var deleted = await _propertyService.DeleteAsync(id, userId.Value);
+            var deleted = await _propertyService.DeleteAsync(id, userId);
             if (!deleted) return NotFound();
             return NoContent();
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Forbid(ex.Message);
+            return StatusCode(StatusCodes.Status403Forbidden, new { Message = ex.Message });
         }
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using InmobiliaryMgmt.Domain.Entities;
+using System.Reflection.Emit;
 
 namespace InmobiliaryMgmt.Infrastructure.Data
 {
@@ -62,10 +63,12 @@ namespace InmobiliaryMgmt.Infrastructure.Data
             {
                 entity.HasKey(p => p.Id);
 
-                entity.Property(p => p.Title).IsRequired().HasMaxLength(100);
+                entity.Property(p => p.Title).IsRequired().HasMaxLength(200);
                 entity.Property(p => p.Description).HasMaxLength(1000);
                 entity.Property(p => p.Address).HasMaxLength(200);
                 entity.Property(p => p.Price).HasPrecision(18,2); 
+                
+                entity.HasIndex(p => p.Title).IsUnique(); 
 
                 entity.HasOne(p => p.User)
                       .WithMany(u => u.Properties)
@@ -88,14 +91,14 @@ namespace InmobiliaryMgmt.Infrastructure.Data
                 entity.HasKey(pi => pi.Id);
 
                 entity.Property(pi => pi.Url).IsRequired().HasMaxLength(500);
-                entity.Property(pi => pi.PublicId).HasMaxLength(500);
+                entity.Property(pi => pi.PublicId).IsRequired().HasMaxLength(200); 
             });
             
             modelBuilder.Entity<ContactRequest>(entity =>
             {
                 entity.HasKey(cr => cr.Id);
 
-                entity.Property(cr => cr.Message).IsRequired().HasMaxLength(500);
+                entity.Property(cr => cr.Message).IsRequired().HasMaxLength(1000); 
                 entity.Property(cr => cr.SentDate).IsRequired();
 
                 entity.HasOne(cr => cr.User)
@@ -111,9 +114,10 @@ namespace InmobiliaryMgmt.Infrastructure.Data
             
             modelBuilder.Entity<RefreshToken>(entity =>
             {
-                entity.HasKey(rt => rt.User);
-
-                entity.Property(rt => rt.Token).IsRequired().HasMaxLength(256); 
+                entity.HasKey(rt => rt.Token); 
+                
+                entity.Property(rt => rt.Token).IsRequired().HasMaxLength(500); 
+                
                 entity.Property(rt => rt.ExpiryDate).IsRequired();
                 entity.Property(rt => rt.IsRevoked).HasDefaultValue(false); 
 

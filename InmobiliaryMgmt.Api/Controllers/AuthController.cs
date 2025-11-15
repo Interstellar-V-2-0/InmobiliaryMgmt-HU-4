@@ -5,23 +5,21 @@ using Microsoft.AspNetCore.Mvc;
 namespace InmobiliaryMgmt.Api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")] // Resuelve a api/auth
+    [Route("api/[controller]")] 
     public class AuthController : ControllerBase
     {
-        private readonly IUserService _userService;
+        private readonly IAuthService _authService;
 
-        public AuthController(IUserService userService)
+        public AuthController(IAuthService authService) 
         {
-            _userService = userService;
+            _authService = authService; 
         }
 
-        // ====================================
-        // REGISTRO DE USUARIO
-        // ====================================
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterUserDto request)
         {
-            var result = await _userService.Register(
+
+            var result = await _authService.Register( 
                 request.Name,
                 request.LastName,
                 request.Email,
@@ -30,19 +28,18 @@ namespace InmobiliaryMgmt.Api.Controllers
                 request.DocTypeId
             );
 
-            if (result.Contains("registrado correctamente"))
-                return Ok(new { Message = result });
+            if (result.Contains("El correo ya se encuentra registrado")) 
+                return BadRequest(new { Message = result });
             
-            return BadRequest(new { Message = result });
+            return Ok(new { Message = result });
         }
 
-        // ====================================
-        // LOGIN
-        // ====================================
+
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto request)
         {
-            var (accessToken, refreshToken) = await _userService.Login(request.Email, request.Password);
+
+            var (accessToken, refreshToken) = await _authService.Login(request.Email, request.Password);
 
             if (accessToken == null)
                 return Unauthorized(new { Message = "Correo o contraseña incorrecta" });
@@ -54,13 +51,12 @@ namespace InmobiliaryMgmt.Api.Controllers
             });
         }
 
-        // ====================================
-        // REFRESH TOKEN
-        // ====================================
+
         [HttpPost("refresh")]
         public async Task<IActionResult> Refresh([FromBody] RefreshRequest request)
         {
-            var (newAccessToken, newRefreshToken) = await _userService.RefreshToken(request.RefreshToken);
+
+            var (newAccessToken, newRefreshToken) = await _authService.RefreshToken(request.RefreshToken);
 
             if (newAccessToken == null)
                 return Unauthorized(new { Message = "Refresh token inválido o expirado" });

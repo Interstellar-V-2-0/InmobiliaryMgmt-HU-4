@@ -1,140 +1,26 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-using Infrastructure.Repositories;
 using InmobiliaryMgmt.Application.Interfaces;
-using InmobiliaryMgmt.Application.DTOs.User; // Importado para los DTOs de perfil
-using InmobiliaryMgmt.Domain.Entities;
+using InmobiliaryMgmt.Application.DTOs.User;
 using InmobiliaryMgmt.Domain.Interfaces;
-using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
 
 namespace InmobiliaryMgmt.Application.Services;
 
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
-    private readonly IRefreshTokenRepository _refreshTokenRepository;
-    private readonly IConfiguration _configuration;
-
-    public UserService(IUserRepository userRepository, IRefreshTokenRepository refreshTokenRepository, IConfiguration configuration)
+    
+    public UserService(IUserRepository userRepository)
     {
         _userRepository = userRepository;
-        _refreshTokenRepository = refreshTokenRepository;
-        _configuration = configuration;
     }
     
-    // --- MÉTODOS DE AUTENTICACIÓN ---
-
-    // Registro
-    public async Task<string> Register(string name, string lastName, string email, string password, int roleId, int docTypeId)
-    {
-        var exists = await _userRepository.EmailExistsAsync(email);
-        if (exists)
-            return "El correo ya se encuentra registrado";
-
-        var user = new User
-        {
-            Name = name,
-            LastName = lastName,
-            Email = email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
-            RoleId = roleId,
-            DocTypeId = docTypeId,
-            DocumentNumber = "0000000000", 
-            RegisterDate = DateTime.UtcNow
-        };
-
-        await _userRepository.CreateAsync(user);
-
-        return "Usuario registrado correctamente";
-    }
-
-    // Login: retorna JWT + Refresh Token
-    public async Task<(string? AccessToken, string? RefreshToken)> Login(string email, string password)
-    {
-        var user = await _userRepository.GetByEmailAsync(email);
-
-        if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-            return (null, null);
-
-        var accessToken = GenerateJwtToken(user);
-        var refreshToken = await GenerateRefreshToken(user);
-
-        return (accessToken, refreshToken);
-    }
-    
-    // Refresh Token
-    public async Task<(string? AccessToken, string? RefreshToken)> RefreshToken(string token)
-    {
-        // Se asume que GetByTokenWithUserAsync carga la entidad User relacionada
-        var refreshTokenEntity = await _refreshTokenRepository.GetByTokenWithUserAsync(token);
-
-        if (refreshTokenEntity == null || refreshTokenEntity.ExpiryDate < DateTime.UtcNow)
-            return (null, null);
-
-        refreshTokenEntity.IsRevoked = true;
-        await _refreshTokenRepository.UpdateAsync(refreshTokenEntity);
-
-        var accessToken = GenerateJwtToken(refreshTokenEntity.User!);
-        var newRefreshToken = await GenerateRefreshToken(refreshTokenEntity.User!);
-
-        return (accessToken, newRefreshToken);
-    }
-    
-    // Generación de JWT
-    private string GenerateJwtToken(User user)
-    {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var claims = new[]
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Role, user.Role?.Name ?? string.Empty),
-            new Claim(ClaimTypes.Email, user.Email),
-            new Claim("Name", user.Name)
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"], 
-            audience: _configuration["Jwt:Audience"],
-            expires: DateTime.UtcNow.AddHours(3),
-            claims: claims,
-            signingCredentials: creds
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-    // Generación y almacenamiento de Refresh Token
-    private async Task<string> GenerateRefreshToken(User user)
-    {
-        var refreshToken = new RefreshToken
-        {
-            Token = Convert.ToBase64String(Guid.NewGuid().ToByteArray()),
-            ExpiryDate = DateTime.UtcNow.AddDays(7),
-            UserId = user.Id
-        };
-
-        await _refreshTokenRepository.CreateAsync(refreshToken);
-
-        return refreshToken.Token;
-    }
-
-
-    // --- MÉTODOS DE GESTIÓN DE PERFIL (NUEVOS) ---
     
     public async Task<UserResponseDto?> GetProfileByIdAsync(int userId)
     {
-        // Se asume que GetByIdAsync carga automáticamente (o se ajusta el repo para cargar) 
-        // las entidades Role y DocType para el DTO.
         var user = await _userRepository.GetByIdAsync(userId); 
         
         if (user == null)
             return null;
 
-        // Mapeo manual a UserResponseDto
         return new UserResponseDto
         {
             Id = user.Id,
@@ -142,14 +28,13 @@ public class UserService : IUserService
             LastName = user.LastName,
             Email = user.Email,
             DocumentNumber = user.DocumentNumber,
-            RoleName = user.Role?.Name ?? "N/A", // Acceso seguro a la propiedad de navegación
-            DocTypeName = user.DocType?.Name ?? "N/A" // Acceso seguro a la propiedad de navegación
+            RoleName = user.Role?.Name ?? "N/A", 
+            DocTypeName = user.DocType?.Name ?? "N/A"
         };
     }
 
     public async Task<UserResponseDto> UpdateProfileAsync(int userId, UserUpdate dto)
     {
-        // Se asume que GetByIdAsync solo carga el usuario base
         var user = await _userRepository.GetByIdAsync(userId);
 
         if (user == null)
@@ -157,14 +42,12 @@ public class UserService : IUserService
             throw new KeyNotFoundException($"Usuario con ID {userId} no encontrado."); 
         }
 
-        // Aplicar actualizaciones
         user.Name = dto.Name ?? user.Name;
         user.LastName = dto.LastName ?? user.LastName;
         user.DocumentNumber = dto.DocumentNumber ?? user.DocumentNumber;
 
         await _userRepository.UpdateAsync(user);
-
-        // Devolver el perfil actualizado llamando al método de lectura
+        
         var updatedProfile = await GetProfileByIdAsync(user.Id);
         
         return updatedProfile ?? 

@@ -1,7 +1,7 @@
+using InmobiliaryMgmt.Api.Extensions; // Importamos la extensión
 using InmobiliaryMgmt.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using InmobiliaryMgmt.Application.DTOs.User;
 
 namespace InmobiliaryMgmt.Api.Controllers;
@@ -17,23 +17,24 @@ public class UserController : ControllerBase
     {
         _userService = userService;
     }
+    
 
-    private int? GetUserIdFromClaims()
-    {
-        var claimValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(claimValue) || !int.TryParse(claimValue, out var userId))
-            return null;
-        return userId;
-    }
     
     [HttpGet("me")]
     public async Task<IActionResult> GetCurrentUserProfile()
     {
-        var userId = GetUserIdFromClaims();
-        if (userId == null) 
-            return Unauthorized("Token inválido o ID de usuario faltante.");
+        int userId;
+        try
+        {
+
+            userId = this.GetUserId(); 
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ex.Message);
+        }
         
-        var userProfile = await _userService.GetProfileByIdAsync(userId.Value); 
+        var userProfile = await _userService.GetProfileByIdAsync(userId); 
         
         if (userProfile == null)
             return NotFound("Perfil de usuario no encontrado.");
@@ -44,13 +45,20 @@ public class UserController : ControllerBase
     [HttpPut("me")]
     public async Task<IActionResult> UpdateCurrentUserProfile([FromBody] UserUpdate dto)
     {
-        var userId = GetUserIdFromClaims();
-        if (userId == null) 
-            return Unauthorized("Token inválido o ID de usuario faltante.");
+        int userId;
+        try
+        {
+
+            userId = this.GetUserId(); 
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ex.Message);
+        }
         
         try
         {
-            var updatedUser = await _userService.UpdateProfileAsync(userId.Value, dto);
+            var updatedUser = await _userService.UpdateProfileAsync(userId, dto);
             return Ok(updatedUser);
         }
         catch (KeyNotFoundException)

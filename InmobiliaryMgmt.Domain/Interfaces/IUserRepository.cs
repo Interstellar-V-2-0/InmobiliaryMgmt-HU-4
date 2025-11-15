@@ -1,7 +1,6 @@
 using InmobiliaryMgmt.Domain.Entities;
-using InmobiliaryMgmt.Domain.Interfaces;
 
-namespace Infrastructure.Repositories
+namespace InmobiliaryMgmt.Domain.Interfaces
 {
     public interface IUserRepository : IRepository<User>
     {

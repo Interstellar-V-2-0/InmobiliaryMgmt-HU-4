@@ -42,11 +42,20 @@ public class ContactRequestService : IContactRequestService
         
         var createdRequest = await _contactRequestRepository.CreateAsync(request); 
         
-        await _emailService.SendEmailAsync(
-            property.User.Email,
-            "Nueva solicitud de contacto",
-            $"Mensaje del usuario:\n\n{dto.Message}"
-        );
+        var recipientEmail = property.User.Email;
+
+        if (!string.IsNullOrEmpty(recipientEmail))
+        {
+            await _emailService.SendEmailAsync(
+                recipientEmail,
+                "Nueva solicitud de contacto",
+                $"Mensaje del usuario:\n\n{dto.Message}"
+            );
+        }
+        else
+        {
+            Console.WriteLine($"[ADVERTENCIA] No se pudo enviar notificación: El propietario de la propiedad {property.Id} (Usuario ID: {property.User.Id}) no tiene un correo electrónico válido registrado.");
+        }
         
         return new ContactRequestResponseDto
         {

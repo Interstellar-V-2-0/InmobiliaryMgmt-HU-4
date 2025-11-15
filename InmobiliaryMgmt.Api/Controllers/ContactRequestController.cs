@@ -3,7 +3,7 @@ using InmobiliaryMgmt.Application.DTOs;
 using InmobiliaryMgmt.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
+using InmobiliaryMgmt.Api.Extensions; 
 namespace InmobiliaryMgmt.Api.Controllers;
 
 [ApiController]
@@ -21,15 +21,21 @@ public class ContactRequestController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Create(ContactRequestCreateDto dto)
     {
-        var claimValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        
-        if (string.IsNullOrEmpty(claimValue) || !int.TryParse(claimValue, out var userId))
-            return Unauthorized("Invalid token or missing user id.");
+        int userId;
+        try
+        {
+            // Usamos la extensión en lugar de User.FindFirstValue(...)
+            userId = this.GetUserId(); 
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ex.Message);
+        }
 
         try
         {
             var result = await _contactRequestService.CreateAsync(userId, dto);
-            return Ok(result); 
+            return StatusCode(StatusCodes.Status201Created, result); // Usar 201 Created
         }
         catch (Exception ex)
         {

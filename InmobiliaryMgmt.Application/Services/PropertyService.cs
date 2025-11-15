@@ -1,4 +1,3 @@
-using Infrastructure.Repositories;
 using InmobiliaryMgmt.Application.DTOs.Property;
 using InmobiliaryMgmt.Application.Interfaces;
 using InmobiliaryMgmt.Domain.Entities;
@@ -45,7 +44,7 @@ public class PropertyService : IPropertyService
             Description = dto.Description,
             Price = dto.Price,
             Address = dto.Address,
-            UserId = userId // Asignación del propietario
+            UserId = userId
         };
 
         var createdProperty = await _propertyRepository.CreateAsync(property);
@@ -68,7 +67,7 @@ public class PropertyService : IPropertyService
         if (property.UserId != userId)
             throw new UnauthorizedAccessException("Solo el propietario puede actualizar esta propiedad.");
         
-        // 2. Mapeo de actualización
+
         property.Title = dto.Title;
         property.Description = dto.Description;
         property.Price = dto.Price;
@@ -76,7 +75,7 @@ public class PropertyService : IPropertyService
 
         var updatedProperty = await _propertyRepository.UpdateAsync(property);
         
-        // Obtener la entidad con las navegaciones para el DTO
+
         var propertyWithDetails = await _propertyRepository.GetByIdAsync(updatedProperty.Id);
         
         return MapPropertyToResponseDto(propertyWithDetails!);

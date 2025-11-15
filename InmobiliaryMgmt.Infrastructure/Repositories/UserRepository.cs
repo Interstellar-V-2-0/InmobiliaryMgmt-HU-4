@@ -1,4 +1,3 @@
-using Infrastructure.Repositories;
 using InmobiliaryMgmt.Domain.Entities;
 using InmobiliaryMgmt.Domain.Interfaces;
 using InmobiliaryMgmt.Infrastructure.Data;
@@ -14,7 +13,9 @@ namespace InmobiliaryMgmt.Infrastructure.Repositories
         
         public async Task<User?> GetByEmailAsync(string email)
         {
-            return await _context.Users.FirstOrDefaultAsync(x => x.Email == email);
+            return await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(x => x.Email == email);
         }
         
         public async Task<bool> EmailExistsAsync(string email)

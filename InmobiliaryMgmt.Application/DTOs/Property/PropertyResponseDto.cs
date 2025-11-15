@@ -8,11 +8,11 @@ public class PropertyResponseDto
     public decimal Price { get; set; }
     public required string Address { get; set; }
     
-    // Información del creador/propietario
+
     public int UserId { get; set; }
     public required string OwnerName { get; set; } 
     public required string OwnerEmail { get; set; }
 
-    // DTOs anidados para las imágenes
+
     public List<PropertyImageResponseDto> PropertyImages { get; set; } = new List<PropertyImageResponseDto>();
 }

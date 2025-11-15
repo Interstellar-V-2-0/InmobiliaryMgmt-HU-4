@@ -1,5 +1,5 @@
+using InmobiliaryMgmt.Application.DTOs.Property; 
 using InmobiliaryMgmt.Application.Interfaces;
-using InmobiliaryMgmt.Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
@@ -14,7 +14,6 @@ namespace InmobiliaryMgmt.Api.Controllers
     {
         private readonly IPropertyImageService _propertyImageService;
        
-
         public PropertyImageController(IPropertyImageService propertyImageService)
         {
             _propertyImageService = propertyImageService;
@@ -36,16 +35,17 @@ namespace InmobiliaryMgmt.Api.Controllers
         }
         
         [HttpPost("upload")]
-        [Consumes("multipart/form-data")] 
-        public async Task<IActionResult> Upload([FromForm] IFormFile file, [FromForm] int propertyId)
+ 
+        public async Task<IActionResult> Upload([FromForm] ImageUploadDto dto) 
         {
-            if (file == null || file.Length == 0)
-                return BadRequest("No se proporcionó ningún archivo.");
-
+            if (dto.File == null || dto.File.Length == 0)
+ 
+                return BadRequest("No se proporcionó ningún archivo o el archivo está vacío.");
             
             try
             {
-                var createdImage = await _propertyImageService.CreateAsync(propertyId, file);
+
+                var createdImage = await _propertyImageService.CreateAsync(dto.PropertyId, dto.File);
                 return CreatedAtAction(nameof(GetById), new { id = createdImage.Id }, createdImage);
             }
             catch (Exception ex)
