@@ -5,32 +5,36 @@ using InmobiliaryMgmt.Domain.Interfaces;
 using InmobiliaryMgmt.Infrastructure.Data;
 using InmobiliaryMgmt.Infrastructure.Data.Seed;
 using InmobiliaryMgmt.Infrastructure.Repositories;
-using InmobiliaryMgmt.Infrastructure.Services; // Importamos la implementación de EmailService
+using InmobiliaryMgmt.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-using DotNetEnv;
-using InmobiliaryMgmt.Infrastructure.Data.Config;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var connectionString =
+    builder.Configuration["DB_CONNECTION"] ??
+    builder.Configuration.GetConnectionString("DefaultConnection");
 
-Env.Load();
-
-
-var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION");
 if (string.IsNullOrEmpty(connectionString))
-    throw new InvalidOperationException("La variable de entorno 'DB_CONNECTION' no está definida.");
+    throw new InvalidOperationException("No se encontró la cadena de conexión. Verifica tu .env");
 
-builder.Services.Configure<EmailConfiguration>(
-    builder.Configuration.GetSection("EmailSettings"));
+var jwtKey = builder.Configuration["JWT_KEY"];
+var jwtIssuer = builder.Configuration["JWT_ISSUER"];
+var jwtAudience = builder.Configuration["JWT_AUDIENCE"];
+
+if (string.IsNullOrEmpty(jwtKey) ||
+    string.IsNullOrEmpty(jwtIssuer) ||
+    string.IsNullOrEmpty(jwtAudience))
+    throw new InvalidOperationException(" Variables JWT no definidas en .env");
 
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
 );
+
 
 
 builder.Services.AddScoped<IPropertyRepository, PropertyRepository>();
@@ -39,36 +43,18 @@ builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IPropertyImageRepository, PropertyImageRepository>();
 builder.Services.AddScoped<IContactRequestRepository, ContactRequestRepository>();
 builder.Services.AddScoped<IDocTypeRepository, DocTypeRepository>();
-builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>(); 
-
-
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-
 
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPropertyImageService, PropertyImageService>();
 builder.Services.AddScoped<IContactRequestService, ContactRequestService>();
 builder.Services.AddScoped<IPropertyService, PropertyService>();
-
-
-builder.Services.AddScoped<IAuthService, AuthService>(); 
-
-
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-
 
 builder.Services.AddSingleton<CloudinaryService>();
 
-
-var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? builder.Configuration["Jwt:Key"];
-var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? builder.Configuration["Jwt:Issuer"];
-var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? builder.Configuration["Jwt:Audience"];
-
-if (string.IsNullOrEmpty(jwtKey) || string.IsNullOrEmpty(jwtIssuer) || string.IsNullOrEmpty(jwtAudience))
-{
-
-    throw new InvalidOperationException("Las claves JWT (Key, Issuer, Audience) deben estar definidas en appsettings o variables de entorno.");
-}
 
 builder.Services.AddAuthentication(options =>
 {
@@ -85,7 +71,7 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtIssuer,
         ValidAudience = jwtAudience,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!)),
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
         ClockSkew = TimeSpan.Zero
     };
 });
@@ -94,11 +80,10 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
-        Description = "Ingrese el token JWT con el prefijo Bearer. Ejemplo: 'Bearer {token}'",
+        Description = "Ingrese el token JWT con Bearer {token}",
         Name = "Authorization",
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
@@ -113,10 +98,7 @@ builder.Services.AddSwaggerGen(options =>
                 {
                     Type = ReferenceType.SecurityScheme,
                     Id = "Bearer"
-                },
-                Scheme = "oauth2",
-                Name = "Bearer",
-                In = ParameterLocation.Header,
+                }
             },
             new List<string>()
         }
@@ -124,18 +106,15 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
+    options.AddPolicy("AllowAll",
+        p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
-
 builder.Services.AddControllers();
+
 
 var app = builder.Build();
 
@@ -143,21 +122,19 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await db.Database.MigrateAsync(); 
+    await db.Database.MigrateAsync();
     await DbSeeder.Seed(db);
 }
 
 
 app.UseCors("AllowAll");
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();      
+app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
+
 app.Run();
