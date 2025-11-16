@@ -1,7 +1,7 @@
 bin/
 obj/
 .env
-WebProductos.Api/appsettings.json
+
 
 .vs/
 .vscode/
