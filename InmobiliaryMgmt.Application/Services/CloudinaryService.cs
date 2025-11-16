@@ -29,5 +29,11 @@ namespace InmobiliaryMgmt.Application.Services
             };
             return await _cloudinary.UploadAsync(uploadParams);
         }
+
+        public async Task<DeletionResult> DeleteImageAsync(string publicId)
+        {
+            var deletionParams = new DeletionParams(publicId);
+            return await _cloudinary.DestroyAsync(deletionParams);
+        }
     }
 }

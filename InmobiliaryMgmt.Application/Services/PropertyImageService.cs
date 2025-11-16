@@ -28,10 +28,9 @@ namespace InmobiliaryMgmt.Application.Services
             return _repository.GetByIdAsync(id);
         }
 
-        // Nuevo método: Crear imagen desde archivo
+       
         public async Task<PropertyImage> CreateAsync(int propertyId, IFormFile file)
         {
-            // Subir a Cloudinary
             ImageUploadResult uploadResult = await _cloudinaryService.UploadImageAsync(file);
 
             var propertyImage = new PropertyImage
@@ -48,9 +47,11 @@ namespace InmobiliaryMgmt.Application.Services
         {
             var entity = await _repository.GetByIdAsync(id);
             if (entity == null) return false;
-
-            // Aquí podrías eliminar la imagen de Cloudinary si quieres
-            // await _cloudinaryService.DeleteImageAsync(entity.PublicId);
+            
+            if (!string.IsNullOrEmpty(entity.PublicId))
+            {
+                await _cloudinaryService.DeleteImageAsync(entity.PublicId);
+            }
 
             await _repository.DeleteAsync(entity);
             return true;
