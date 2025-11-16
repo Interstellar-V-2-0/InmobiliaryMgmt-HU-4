@@ -12,30 +12,31 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 
+// Build
 var builder = WebApplication.CreateBuilder(args);
 
+// Conexión a la DB
 var connectionString =
     builder.Configuration["DB_CONNECTION"] ??
     builder.Configuration.GetConnectionString("DefaultConnection");
 
 if (string.IsNullOrEmpty(connectionString))
-    throw new InvalidOperationException("No se encontró la cadena de conexión. Verifica tu .env");
+    throw new InvalidOperationException("No se encontró la cadena de conexión. Verifica tus variables de entorno.");
 
-var jwtKey = builder.Configuration["JWT_KEY"];
-var jwtIssuer = builder.Configuration["JWT_ISSUER"];
-var jwtAudience = builder.Configuration["JWT_AUDIENCE"];
+// Cargar configuración JWT desde sección "Jwt"
+var jwtKey = builder.Configuration["Jwt:Key"];
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
 
 if (string.IsNullOrEmpty(jwtKey) ||
     string.IsNullOrEmpty(jwtIssuer) ||
     string.IsNullOrEmpty(jwtAudience))
-    throw new InvalidOperationException(" Variables JWT no definidas en .env");
+    throw new InvalidOperationException("Variables JWT no definidas correctamente en el entorno. Usa Jwt__Key, Jwt__Issuer, Jwt__Audience");
 
-
+// Servicios
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
 );
-
-
 
 builder.Services.AddScoped<IPropertyRepository, PropertyRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -55,7 +56,7 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 
 builder.Services.AddSingleton<CloudinaryService>();
 
-
+// Configuración JWT
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -76,7 +77,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -105,8 +106,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-
-
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
@@ -115,10 +115,9 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddControllers();
 
-
 var app = builder.Build();
 
-
+// Migración y seed DB
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -126,7 +125,7 @@ using (var scope = app.Services.CreateScope())
     await DbSeeder.Seed(db);
 }
 
-
+// Middleware
 app.UseCors("AllowAll");
 
 app.UseSwagger();      
