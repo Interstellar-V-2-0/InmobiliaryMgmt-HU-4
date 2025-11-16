@@ -21,7 +21,7 @@ public class AuthService : IAuthService
         _refreshTokenRepository = refreshTokenRepository;
         _configuration = configuration;
     }
-    
+
     public async Task<string> Register(string name, string lastName, string email, string password, int roleId, int docTypeId)
     {
         var exists = await _userRepository.EmailExistsAsync(email);
@@ -36,19 +36,17 @@ public class AuthService : IAuthService
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
             RoleId = roleId,
             DocTypeId = docTypeId,
-            DocumentNumber = "0000000000", 
+            DocumentNumber = "0000000000",
             RegisterDate = DateTime.UtcNow
         };
 
         await _userRepository.CreateAsync(user);
-
         return "Usuario registrado correctamente";
     }
-    
+
     public async Task<(string? AccessToken, string? RefreshToken)> Login(string email, string password)
     {
         var user = await _userRepository.GetByEmailAsync(email);
-
         if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             return (null, null);
 
@@ -57,11 +55,9 @@ public class AuthService : IAuthService
 
         return (accessToken, refreshToken);
     }
-    
 
     public async Task<(string? AccessToken, string? RefreshToken)> RefreshToken(string token)
     {
-
         var refreshTokenEntity = await _refreshTokenRepository.GetByTokenWithUserAsync(token);
 
         if (refreshTokenEntity == null || refreshTokenEntity.ExpiryDate < DateTime.UtcNow || refreshTokenEntity.IsRevoked)
@@ -75,23 +71,30 @@ public class AuthService : IAuthService
 
         return (accessToken, newRefreshToken);
     }
-    
+
     private string GenerateJwtToken(User user)
     {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
+        var keyStr = _configuration["Jwt:Key"];
+        var issuer = _configuration["Jwt:Issuer"];
+        var audience = _configuration["Jwt:Audience"];
+
+        if (string.IsNullOrEmpty(keyStr) || string.IsNullOrEmpty(issuer) || string.IsNullOrEmpty(audience))
+            throw new InvalidOperationException("Variables JWT no definidas en el entorno.");
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyStr));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Role, user.Role?.Name),
+            new Claim(ClaimTypes.Role, user.Role?.Name ?? ""),
             new Claim(ClaimTypes.Email, user.Email),
             new Claim("Name", user.Name)
         };
 
         var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"], 
-            audience: _configuration["Jwt:Audience"],
+            issuer: issuer,
+            audience: audience,
             expires: DateTime.UtcNow.AddHours(3),
             claims: claims,
             signingCredentials: creds
@@ -99,7 +102,7 @@ public class AuthService : IAuthService
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
-    
+
     private async Task<string> GenerateRefreshToken(User user)
     {
         var refreshToken = new RefreshToken
@@ -110,7 +113,6 @@ public class AuthService : IAuthService
         };
 
         await _refreshTokenRepository.CreateAsync(refreshToken);
-
         return refreshToken.Token;
     }
 }
